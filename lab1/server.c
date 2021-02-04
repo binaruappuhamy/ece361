@@ -8,6 +8,13 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <errno.h>
+/*
+- Beej's Guide to Network Programming
+- 03/02/2021
+- Datagram Sockets(6.3)
+- Source Code
+- http://beej.us/guide/bgnet/examples/listener.c
+*/
 
 #define MAXBUFLEN 100
 int main(int argc, char const *argv[])
@@ -24,9 +31,9 @@ int main(int argc, char const *argv[])
     int status;
 
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM; //for UDP
-    hints.ai_flags = AI_PASSIVE;
+    hints.ai_family = AF_UNSPEC; //IPv4 and IPv6
+    hints.ai_socktype = SOCK_DGRAM; //set socket type for UDP
+    hints.ai_flags = AI_PASSIVE; //use my IP
 
     if ((status = getaddrinfo(NULL, argv[1], &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
@@ -35,6 +42,7 @@ int main(int argc, char const *argv[])
 
     struct addrinfo* i;
 
+    //loop through all the results and bind to the first successfull bind
     for (i = servinfo; i != NULL; i = i -> ai_next) {
         if ((sockfd = socket(i->ai_family, i->ai_socktype,
             i->ai_protocol)) == -1) {
@@ -64,16 +72,14 @@ int main(int argc, char const *argv[])
     socklen_t addr_len = sizeof their_addr;
     char buf[MAXBUFLEN];
 
+    //store the received packet in buf[]
     if ((recvfrom(sockfd, buf, MAXBUFLEN - 1, 0,
         (struct sockaddr*)&their_addr, &addr_len)) == -1) {
         perror("recvfrom\n");
         exit(1);
     }
 
-
-
-  
-
+    //compare the buffer for "ftp" and send the confirmation message
     if (strcmp(buf, "ftp") == 0) {
         if ((sendto(sockfd, "yes", strlen("yes"), 0,
             (struct sockaddr *) &their_addr, addr_len)) == -1) {
